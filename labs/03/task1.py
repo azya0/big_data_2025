@@ -100,6 +100,10 @@ def print_graph(x_original: np.ndarray[complex], x_restored: np.ndarray[complex]
     pyplot.show()
 
 
+def compare_rows(x_original: np.ndarray[complex], x_restored: np.ndarray[complex]):
+    return np.mean((x_original - x_restored) ** 2)
+
+
 def main():
     N: int = 200
 
@@ -116,6 +120,8 @@ def main():
 
     restored_row = np.real(get_model_row_from(data, N, M))
     print(f"\nПервые 12 элементов восстановленного ряда:\n{restored_row[:12]}")
+
+    print(f"\nMSE: {compare_rows(model_row, restored_row)}")
 
     print_graph(model_row, restored_row, N)
 
