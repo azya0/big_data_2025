@@ -144,6 +144,8 @@ def print_moving_avg_graph(df: pd.DataFrame):
 
 
 def main():
+    # Сделать Фурье
+    
     data = get_data()
     process_data(data)
 

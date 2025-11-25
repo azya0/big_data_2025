@@ -105,12 +105,14 @@ def compare_rows(x_original: np.ndarray[complex], x_restored: np.ndarray[complex
 
 
 def main():
+    # Частоты оказались верными. При расчётах на бумаге мы забыли учесть h = 0.02
+
     N: int = 200
 
     model_row = get_model_row(N)
     print(f"Первые 12 элементов изначального ряда:\n{model_row[:12]}")
 
-    M: int = 6
+    M: int = 3
     data: PronyApproximation = prony(model_row, M)
     
     print("\nДанные апроксимации методом Прони:")
@@ -123,7 +125,7 @@ def main():
 
     print(f"\nMSE: {compare_rows(model_row, restored_row)}")
 
-    print_graph(model_row, restored_row, N)
+    print_graph(restored_row, model_row, N)
 
 
 if __name__ == "__main__":
