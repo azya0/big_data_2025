@@ -70,8 +70,7 @@ def print_tukey_boxplot(data: np.ndarray) -> np.ndarray:
 
     plt.title("Боксплот Тьюки для сгенерированных данных")
     plt.xlabel("Значения")
-    plt.show(block=False)
-    plt.savefig("tukey-boxplot.png")
+    plt.show()
 
     return outliers
 
