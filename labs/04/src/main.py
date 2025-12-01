@@ -1,7 +1,7 @@
 import dataclasses
 
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as pyplot
 
 @dataclasses.dataclass
 class SigmaRuleResult:
@@ -62,16 +62,14 @@ def print_conclusions(result: SigmaRuleResult, outliers: np.ndarray) -> None:
 
 # 2. Boxplot
 def print_tukey_boxplot(data: np.ndarray) -> np.ndarray:
-    plt.figure(figsize=(8, 6))
-    box = plt.boxplot(data, vert=False, patch_artist=True)
+    pyplot.figure(figsize=(8, 6))
+    box = pyplot.boxplot(data, vert=False, patch_artist=True)
 
     outliers = box['fliers'][0].get_xydata()[:, 0]
     print("\nВыбросы по боксплоту Тьюки:", outliers)
 
-    plt.title("Боксплот Тьюки для сгенерированных данных")
-    plt.xlabel("Значения")
-    plt.show(block=False)
-    plt.savefig("tukey-boxplot.png")
+    pyplot.title("Боксплот Тьюки для сгенерированных данных")
+    pyplot.xlabel("Значения")
 
     return outliers
 
@@ -79,4 +77,9 @@ def print_tukey_boxplot(data: np.ndarray) -> np.ndarray:
 if __name__ == "__main__":
     np.set_printoptions(precision=3, suppress=True)
     data, sorted_data = generate_data()
-    print_conclusions(apply_three_sigma(data, sorted_data), print_tukey_boxplot(data))
+
+    outliers = print_tukey_boxplot(data)
+
+    print_conclusions(apply_three_sigma(data, sorted_data), outliers)
+
+    pyplot.show()
