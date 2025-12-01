@@ -1,6 +1,16 @@
 import matplotlib.pyplot as pyplot
+import numpy as np
 import pandas as pd
 from statsmodels.tsa.seasonal import seasonal_decompose
+
+
+INPUT_COMMAND_TEST: str = """
+0 - Визуализация исходных данных
+1 - Анализ тренда, сезонности и остатков
+2 - Дополнительный анализ: скользящее среднее для тренда
+3 - Амплитудный спектр Фурье
+exit - Выход
+"""
 
 
 def parse_csv(filename: str, year: str) -> pd.Series:
@@ -143,12 +153,42 @@ def print_moving_avg_graph(df: pd.DataFrame):
     pyplot.show()
 
 
+def print_fourier_spectrum(df: pd.DataFrame):
+    values = df.values
+    
+    x_fft = np.fft.fft(values)
+    amplitude_spectrum = np.abs(x_fft) / len(values)
+    frequencies = np.fft.fftfreq(len(values), d=0.1)
+
+    positive_freq_mask = frequencies >= 0
+    amplitude_spectrum = amplitude_spectrum[positive_freq_mask]
+    frequencies = frequencies[positive_freq_mask]
+
+    main_freq_idx = np.argmax(amplitude_spectrum[1:]) + 1
+    main_frequency = frequencies[main_freq_idx]
+    main_amplitude = amplitude_spectrum[main_freq_idx]
+
+    print(f"Главная частота: {main_frequency:.2f} Hz с амплитудой {main_amplitude[0]:.4f}")
+
+    pyplot.figure(figsize=(10, 6))
+    pyplot.plot(frequencies, amplitude_spectrum, 'b-')
+    pyplot.plot(main_frequency, main_amplitude, 'ro', label=f'Главная частота = {main_frequency:.2f} Hz')
+    pyplot.title('Амплитудный спектр Фурье')
+    pyplot.xlabel('Частота (Hz)')
+    pyplot.ylabel('Амплитуда')
+    pyplot.grid(True)
+    pyplot.legend()
+    pyplot.show()
+
+
 def main():
+    # Сделать Фурье
+    
     data = get_data()
     process_data(data)
 
     while True:
-        command = input("0 - Визуализация исходных данных\n1 - Анализ тренда, сезонности и остатков\n2 - Дополнительный анализ: скользящее среднее для тренда\nexit - Выход\n")
+        command = input(INPUT_COMMAND_TEST)
         
         match (command):
             case "0":
@@ -157,6 +197,8 @@ def main():
                 print_trend_graph(data)
             case "2":
                 print_moving_avg_graph(data)
+            case "3":
+                print_fourier_spectrum(data)
             case "exit":
                 break
             case _:
