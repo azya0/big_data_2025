@@ -85,13 +85,11 @@ def process_data(data: pd.DataFrame):
     # Проверка тренда
     from scipy.stats import linregress
     trend = decomposition.trend.dropna()
-    slope, _, _, p_value, _ = linregress(range(len(trend)), trend)
+    _, _, _, p_value, _ = linregress(range(len(trend)), trend)
     if p_value < 0.05:
         print("Статистически значимый тренд (p-value < 0.05)")
     else:
         print("Нет статистически значимого тренда")
-
-    print("Частота: ", slope)
 
     # Анализ сезонности по месяцам
     seasonal_amplitude = decomposition.seasonal.groupby(decomposition.seasonal.index.month).mean()
@@ -290,7 +288,7 @@ def print_data(df: pd.DataFrame):
 
 @process_error
 def process_command(data: pd.DataFrame) -> bool | None:    
-    command = input(INPUT_COMMAND_TEST)
+    command = input(INPUT_COMMAND_TEST).strip()
     
     match (command):
         case "print":
