@@ -1,16 +1,27 @@
 import matplotlib.pyplot as pyplot
+from matplotlib.axes import Axes
 import numpy as np
 import pandas as pd
-from statsmodels.tsa.seasonal import seasonal_decompose
 
 
 INPUT_COMMAND_TEST: str = """
+print - Показать столбик температур (DEBUG)
 0 - Визуализация исходных данных
 1 - Анализ тренда, сезонности и остатков
 2 - Дополнительный анализ: скользящее среднее для тренда
 3 - Амплитудный спектр Фурье
 exit - Выход
 """
+
+
+def process_error(old_function):
+    def new_function(*args, **kwargs):
+        try:
+            return old_function(*args, **kwargs)
+        except (KeyboardInterrupt, EOFError):
+            return
+    
+    return new_function
 
 
 def parse_csv(filename: str, year: str) -> pd.Series:
@@ -66,13 +77,15 @@ def get_data() -> pd.DataFrame:
     return df
 
 
+@process_error
 def process_data(data: pd.DataFrame):
+    from statsmodels.tsa.seasonal import seasonal_decompose
     decomposition = seasonal_decompose(data["temp"], model="additive", period=365)
 
     # Проверка тренда
     from scipy.stats import linregress
     trend = decomposition.trend.dropna()
-    slope, intercept, r_value, p_value, std_err = linregress(range(len(trend)), trend)
+    slope, _, _, p_value, _ = linregress(range(len(trend)), trend)
     if p_value < 0.05:
         print("Статистически значимый тренд (p-value < 0.05)")
     else:
@@ -117,92 +130,192 @@ def print_base_graph(df: pd.DataFrame):
 def print_trend_graph(df: pd.DataFrame):
     # Анализ тренда, сезонности и остатков
 
-    decomposition = seasonal_decompose(df['temp'], model='additive', period=365)
+    from statsmodels.tsa.seasonal import seasonal_decompose
+    decomposition = seasonal_decompose(df["temp"], model="additive", period=365)
 
     pyplot.figure(figsize=(15, 15))
     pyplot.subplot(4, 1, 1)
     pyplot.plot(decomposition.observed)
-    pyplot.title('Исходный ряд')
+    pyplot.title("Исходный ряд")
 
     pyplot.subplot(4, 1, 2)
     pyplot.plot(decomposition.trend)
-    pyplot.title('Тренд')
+    pyplot.title("Тренд")
 
     pyplot.subplot(4, 1, 3)
     pyplot.plot(decomposition.seasonal)
-    pyplot.title('Сезонная компонента')
+    pyplot.title("Сезонная компонента")
 
     pyplot.subplot(4, 1, 4)
     pyplot.scatter(decomposition.resid.index, decomposition.resid, s=30, alpha=0.5)
-    pyplot.title('Остатки')
+    pyplot.title("Остатки")
     pyplot.tight_layout()
     pyplot.show()
 
 
 def print_moving_avg_graph(df: pd.DataFrame):
-    # Скользящее среднее для тренда
-
     WINDOW = 30
-    df['moving_avg'] = df['temp'].rolling(window=WINDOW).mean()
+    df["moving_avg"] = df["temp"].rolling(window=WINDOW).mean()
 
     pyplot.figure(figsize=(15, 6))
-    pyplot.plot(df.index, df['temp'], alpha=0.7, label='Исходные данные')
-    pyplot.plot(df.index, df['moving_avg'], label=f'Скользящее среднее ({WINDOW} дней)')
-    pyplot.title('Выделение тренда методом скользящего среднего')
+    pyplot.plot(df.index, df["temp"], alpha=0.7, label="Исходные данные")
+    pyplot.plot(df.index, df["moving_avg"], label=f"Скользящее среднее ({WINDOW} дней)")
+    pyplot.title("Выделение тренда методом скользящего среднего")
     pyplot.legend()
     pyplot.show()
 
 
 def print_fourier_spectrum(df: pd.DataFrame):
-    values = df.values
+    # Для тайп-хинтв в vs-code
+    def get_axes_by_index(data: np.ndarray[np.ndarray[Axes]], i: int, j: int) -> Axes:
+        return data[i, j]
     
-    x_fft = np.fft.fft(values)
-    amplitude_spectrum = np.abs(x_fft) / len(values)
-    frequencies = np.fft.fftfreq(len(values), d=0.1)
+    data = np.asarray(df)
+    data = data[~np.isnan(data)]
+    n = len(data)
+    
+    if n == 0:
+        print("Нет данных для анализа")
+        return None
+    
+    window = np.hanning(n)
+    data_windowed = data * window
+    
+    fft_result = np.fft.fft(data_windowed)
+    
+    amplitudes = np.abs(fft_result)
+    
+    amplitudes_half = amplitudes[:n//2]
+    
+    freqs = np.fft.fftfreq(n, d=1.0)[:n//2]
+    
+    valid_indices = np.where(freqs > 0.001)[0]
+    if len(valid_indices) > 0:
+        main_freq_idx = valid_indices[np.argmax(amplitudes_half[valid_indices])]
+        main_freq = freqs[main_freq_idx]
+        main_amplitude = amplitudes_half[main_freq_idx]
+        period = 1 / main_freq if main_freq > 0 else np.inf
+    else:
+        main_freq = 0
+        main_amplitude = 0
+        period = np.inf
+    
+    axes: np.ndarray[np.ndarray[Axes]]
+    _, axes = pyplot.subplots(2, 2, figsize=(15, 10))
 
-    positive_freq_mask = frequencies >= 0
-    amplitude_spectrum = amplitude_spectrum[positive_freq_mask]
-    frequencies = frequencies[positive_freq_mask]
+    get_axes = lambda i, j: get_axes_by_index(axes, i, j)
+    
+    get_axes(0, 0).plot(data, color="blue", alpha=0.7, linewidth=1)
+    get_axes(0, 0).set_title("Исходный временной ряд температуры", fontsize=12, fontweight="bold")
+    get_axes(0, 0).set_xlabel("Дни")
+    get_axes(0, 0).set_ylabel("Температура")
+    get_axes(0, 0).grid(True, alpha=0.3)
+    
+    get_axes(0, 1).plot(freqs, amplitudes_half, color="red", linewidth=1.5)
+    get_axes(0, 1).set_title("Амплитудный спектр Фурье", fontsize=12, fontweight="bold")
+    get_axes(0, 1).set_xlabel("Частота (1/день)")
+    get_axes(0, 1).set_ylabel("Амплитуда")
+    get_axes(0, 1).grid(True, alpha=0.3)
+    
+    if main_freq > 0:
+        get_axes(0, 1).axvline(
+            x=main_freq,
+            color="green",
+            linestyle="--",
+            alpha=0.7, 
+            label=f"Главная частота: {main_freq:.8f}"
+        )
 
-    main_freq_idx = np.argmax(amplitude_spectrum[1:]) + 1
-    main_frequency = frequencies[main_freq_idx]
-    main_amplitude = amplitude_spectrum[main_freq_idx]
-
-    print(f"Главная частота: {main_frequency:.2f} Hz с амплитудой {main_amplitude[0]:.4f}")
-
-    pyplot.figure(figsize=(10, 6))
-    pyplot.plot(frequencies, amplitude_spectrum, 'b-')
-    pyplot.plot(main_frequency, main_amplitude, 'ro', label=f'Главная частота = {main_frequency:.2f} Hz')
-    pyplot.title('Амплитудный спектр Фурье')
-    pyplot.xlabel('Частота (Hz)')
-    pyplot.ylabel('Амплитуда')
-    pyplot.grid(True)
-    pyplot.legend()
+        get_axes(0, 1).plot(
+            main_freq,
+            main_amplitude,
+            "go",
+            markersize=10, 
+            label=f"Амплитуда: {main_amplitude:.2f}"
+        )
+        
+        get_axes(0, 1).legend()
+    
+    get_axes(1, 0).semilogy(freqs, amplitudes_half, color="purple", linewidth=1.5)
+    get_axes(1, 0).set_title(
+        "Амплитудный спектр (логарифмическая шкала)", 
+        fontsize=12, fontweight="bold"
+    )
+    get_axes(1, 0).set_xlabel("Частота (1/день)")
+    get_axes(1, 0).set_ylabel("Амплитуда (log)")
+    get_axes(1, 0).grid(True, alpha=0.3)
+    
+    if main_freq > 0:
+        get_axes(1, 0).axvline(x=main_freq, color="green", linestyle="--", alpha=0.7)
+        get_axes(1, 0).plot(main_freq, main_amplitude, "go", markersize=10)
+    
+    valid_amps = amplitudes_half.copy()
+    valid_amps[0] = 0
+    
+    top_indices = np.argsort(valid_amps)[-5:][::-1]
+    top_frequencies = freqs[top_indices]
+    top_amplitudes = amplitudes_half[top_indices]
+    top_periods = 1 / top_frequencies
+    
+    results_text = "Топ-5 частот:\n"
+    for i, (freq, amp, period) in enumerate(zip(top_frequencies, top_amplitudes, top_periods)):
+        results_text += f"{i+1}. Частота: {freq:.8f} 1/день, "
+        results_text += f"Период: {period:.1f} дней, "
+        results_text += f"Амплитуда: {amp:.2f}\n"
+    
+    results_text += f"\nВсего точек: {n}\n"
+    results_text += f"Главная частота: {main_freq:.8f} 1/день\n"
+    results_text += f"Период главной частоты: {period:.1f} дней"
+    
+    get_axes(1, 1).text(
+        0.05, 0.95,
+        results_text,
+        transform=get_axes(1, 1).transAxes,
+        fontsize=10, verticalalignment="top",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.5)
+    )
+    get_axes(1, 1).set_title("Результаты анализа", fontsize=12, fontweight="bold")
+    get_axes(1, 1).axis("off")
+    
+    pyplot.tight_layout()
     pyplot.show()
 
 
-def main():
-    # Сделать Фурье
+def print_data(df: pd.DataFrame):
+    print()
+    print(list := df["temp"].tolist())
+    print(f"{len(list)} dots")
+    print()
+
+
+@process_error
+def process_command(data: pd.DataFrame) -> bool | None:    
+    command = input(INPUT_COMMAND_TEST)
     
+    match (command):
+        case "print":
+            print_data(data)
+        case "0":
+            print_base_graph(data)
+        case "1":
+            print_trend_graph(data)
+        case "2":
+            print_moving_avg_graph(data)
+        case "3":
+            print_fourier_spectrum(data)
+        case "exit":
+            return True
+        case _:
+            print(f"Команды \"{command}\" нет в списке!")
+
+
+def main():
     data = get_data()
     process_data(data)
-
+    
     while True:
-        command = input(INPUT_COMMAND_TEST)
-        
-        match (command):
-            case "0":
-                print_base_graph(data)
-            case "1":
-                print_trend_graph(data)
-            case "2":
-                print_moving_avg_graph(data)
-            case "3":
-                print_fourier_spectrum(data)
-            case "exit":
-                break
-            case _:
-                print(f"Команды \"{command}\" нет в списке!")
+        if process_command(data):
+            break
 
 
 if __name__ == "__main__":
