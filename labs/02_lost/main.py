@@ -230,7 +230,7 @@ def checkout(data: ResultProps):
 
     results: dict[str, dict[int, ResultData]] = {}
 
-    for method, trends in [('SMA', data.mat_data), ('Median', data.mm_data)]:
+    for method, trends in [("SMA", data.mat_data), ("Median", data.mm_data)]:
         results[method] = {}
         for window in data.props.window_sizes:
             trend = trends[window]
@@ -270,13 +270,13 @@ def checkout(data: ResultProps):
     pyplot.plot(
         data.props.series.base,
         residuals_example,
-        'b-', alpha=0.7,
-        label='Остатки (SMA, окно 51)'
+        "b-", alpha=0.7,
+        label="Остатки (SMA, окно 51)"
     )
-    pyplot.axhline(y=0, color='r', linestyle='--', label='Нулевая линия')
-    pyplot.title('Пример остатков после вычитания тренда')
-    pyplot.xlabel('k')
-    pyplot.ylabel('Остатки')
+    pyplot.axhline(y=0, color="r", linestyle="--", label="Нулевая линия")
+    pyplot.title("Пример остатков после вычитания тренда")
+    pyplot.xlabel("k")
+    pyplot.ylabel("Остатки")
     pyplot.legend()
     pyplot.grid(True)
     pyplot.show()
