@@ -71,7 +71,7 @@ def print_cluster_correspondence(y_true: np.ndarray, kmeans_labels: np.ndarray):
     return cross_tab, row_percent, mapping
 
 
-def print_classification_result(results: pd.DataFrame, cm_knn: np.ndarray, cm_gnb: np.ndarray):
+def print_classification_result(results: pd.DataFrame, cm_knn: np.ndarray, cm_gnb: np.ndarray, cm_knn_train: np.ndarray, cm_gnb_train: np.ndarray):
     print("\n" + "=" * 60)
     print("РЕЗУЛЬТАТЫ КЛАССИФИКАЦИИ")
     print("=" * 60)
@@ -83,3 +83,9 @@ def print_classification_result(results: pd.DataFrame, cm_knn: np.ndarray, cm_gn
 
     print("\n=== Confusion matrix GaussianNB ===")
     print(cm_gnb)
+
+    print("\n=== Confusion matrix k-NN train ===")
+    print(cm_knn_train)
+
+    print("\n=== Confusion matrix GaussianNB train ===")
+    print(cm_gnb_train)

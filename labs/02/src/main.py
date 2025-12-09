@@ -4,7 +4,12 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn.metrics import mean_squared_error
 from statsmodels.stats.diagnostic import acorr_ljungbox
-from statsmodels.tsa.stattools import acf
+
+
+import warnings
+
+warnings.filterwarnings('ignore')
+
 
 # Turning points detection
 def turning_points(series):
@@ -107,7 +112,7 @@ def print_trend_comparison(k, x, true_trend, ema_dict, alphas, figsize=(14, 12))
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig('trend_comparison.png')
+    plt.show(block=False)
 
     # Errors plot
     fig2, axes2 = plt.subplots(2, 2, figsize=(12, 8)); axes2 = axes2.flatten()
@@ -124,24 +129,41 @@ def print_trend_comparison(k, x, true_trend, ema_dict, alphas, figsize=(14, 12))
         ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
-    plt.savefig("trend_comparison_errors.png")
+    plt.show()
 
-# Main
 
 def main():
+    def count_turning_points(series):
+        n = len(series)
+        if n < 3:
+            return 0
+        p = 0
+        for i in range(1, n - 1):
+            if (series[i - 1] < series[i] > series[i + 1]) or (series[i - 1] > series[i] < series[i + 1]):
+                p += 1
+        return p
+    
     k, true_trend, x = generate_series()
     alphas = [0.01, 0.05, 0.1, 0.3]
     ema_dict = compute_ema(x, alphas)
     comparison = compare_trends(true_trend, ema_dict)
     print("Comparison:")
     for a, r in comparison.items():
-        print(f"α={a}: MSE={r['mse']:.4f}, Corr={r['corr']:.4f}, Kendall={r['kendall']:.4f}")
+        print(f"\tα={a}:\tMSE={r['mse']:.4f}, Corr={r['corr']:.4f}, Kendall={r['kendall']:.4f}")
+    
     print_trend_comparison(k, x, true_trend, ema_dict, alphas)
     freqs, amp, main_freq = fourier_spectrum(x, 0.1)
+    
     print(f"Main freq: {main_freq:.5f}")
     residual_tests = test_residuals(x, ema_dict)
+
     for a, r in residual_tests.items():
-        print(f"α={a}: mean={r['mean']:.4f}, std={r['std']:.4f}, p_t={r['p_t']:.4f}, p_sh={r['p_sh']:.4f}, ljung_p={r['ljung_p']}, runs_p={r['runs_p']:.4f}")
+        print(f"\tALPHA = {a}")
+        print(f"\t\tmean = {r['mean']:.4f}, standart deviation = {r['std']:.4f}, p_t = {r['p_t']:.4f}, p_sh = {r['p_sh']:.4f}, runs_p = {r['runs_p']:.4f}")
+        print(f"\t\tПоворотных точек: {count_turning_points(ema_dict[a].values)}")
+    
+    print()
+
 
 if __name__ == '__main__':
     main()

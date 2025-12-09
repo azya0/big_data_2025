@@ -2,6 +2,8 @@ import pandas as pd
 
 
 def print_coeff_table(df_coeffs, model_name, alpha):
+    df_coeffs = df_coeffs[1:]
+    
     """Печать таблицы коэффициентов."""
     print(f"\n{'=' * 60}")
     print(f"Модель: {model_name}, α = {alpha}")
@@ -32,7 +34,7 @@ def print_coefficients(model, model_name, alpha, degree=11):
     coef_dict["Коэффициент"].append(intercept)
     coef_dict["|Коэф|"].append(abs(intercept))
 
-    for i in range(degree + 1):
+    for _, i in enumerate(range(degree + 1)):
         if i == 0:
             continue
         coef_value = coefs[i - 1] if i - 1 < len(coefs) else 0

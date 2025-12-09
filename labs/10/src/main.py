@@ -60,7 +60,7 @@ def classify_knn_gnb(x, y, test_size=0.3, random_state=1):
     y_train_knn = knn.predict(x_train)
     y_train_gnb = gnb.predict(x_train)
 
-    return (x_test, y_test, y_pred_knn, y_pred_gnb, y_train_knn, y_train_gnb, x_train)
+    return (x_test, y_test, y_train, y_pred_knn, y_pred_gnb, y_train_knn, y_train_gnb, x_train)
 
 
 # Оценка классификации
@@ -97,10 +97,11 @@ if __name__ == "__main__":
     # Добавлен вызов функции печати таблицы соответствия
     cross_tab, row_percent, mapping = print_cluster_correspondence(y_true, kmeans_labels)
 
-    x_test, y_test, y_pred_knn, y_pred_gnb, y_train_knn, y_train_gnb, x_train = classify_knn_gnb(x, y_true)
+    x_test, y_test, y_train, y_pred_knn, y_pred_gnb, y_train_knn, y_train_gnb, x_train = classify_knn_gnb(x, y_true)
     results, cm_knn, cm_gnb = evaluate_classification(y_test, y_pred_knn, y_pred_gnb)
+    _, cm_knn_train, cm_gnb_train = evaluate_classification(y_train, y_train_knn, y_train_gnb)
 
-    print_classification_result(results, cm_knn, cm_gnb)
+    print_classification_result(results, cm_knn, cm_gnb, cm_knn_train, cm_gnb_train)
 
     plot_classification_predictions(x_test, y_pred_knn, y_pred_gnb, "предсказания на тесте",
                                     "classification_predictions.png")

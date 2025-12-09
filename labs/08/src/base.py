@@ -60,7 +60,7 @@ def compute_coefficients(model, model_type, alpha, degree=11):
     # Остальные коэфы
     for i in range(1, degree + 1):
         v = coefs[i - 1] if i - 1 < len(coefs) else 0
-        data["Степень"].append(f"x^{i}")
+        data["Степень"].append(f"x^{i - 1}")
         data["Коэф"].append(v)
         data["|Коэф|"].append(abs(v))
 
